@@ -476,8 +476,10 @@ Each project focuses on a different layer of the software testing and automation
 ## Author
 
 **Arindam Chowdhury**
-
 QA Automation Engineer / SDET
+
+github.com/arindam0111
+LinkedIn: linkedin.com/in/arindam-chowdhury-qa
 
 Focus Areas:
 
