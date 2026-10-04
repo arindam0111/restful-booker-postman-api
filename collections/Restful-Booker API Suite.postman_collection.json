@@ -1,0 +1,585 @@
+{
+  "info": {
+    "_postman_id": "6ffef735-2972-43bf-b6a5-5bde8906fd77",
+    "name": "Restful-Booker API Suite",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "33177947",
+    "_collection_link": "https://go.postman.co/collection/33177947-6ffef735-2972-43bf-b6a5-5bde8906fd77?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Create Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Response contains token\", function () {\r\n    pm.expect(jsonData).to.have.property(\"token\");\r\n});\r\n\r\npm.test(\"Token is a non-empty string\", function () {\r\n    pm.expect(jsonData.token).to.be.a(\"string\");\r\n    pm.expect(jsonData.token).not.to.be.empty;\r\n});\r\n\r\npm.environment.set(\"token\", jsonData.token);\r\n\r\npm.test(\"Token is stored in environment\", function () {\r\n    pm.expect(pm.environment.get(\"token\")).to.eql(jsonData.token);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            },
+            "description": "## Create Token\n\nAuthenticates with the Restful Booker API and retrieves a session token that is required for subsequent authorized requests (e.g., updating or deleting bookings).\n\n### Endpoint\n\n`POST {{baseUrl}}/auth`\n\n### Request Body\n\n| Field | Type | Description |\n| --- | --- | --- |\n| `username` | string | The admin username (from environment variable `{{username}}`) |\n| `password` | string | The admin password (from environment variable `{{password}}`) |\n\n### Response\n\nReturns a JSON object containing a `token` string.\n\n``` json\n{\n  \"token\": \"<auth_token>\"\n}\n\n ```\n\n### Post-Response Behaviour\n\nAfter a successful response, the test scripts automatically:\n\n- Validate that the HTTP status code is `200`\n    \n- Confirm the response body contains a `token` property\n    \n- Confirm the token is a non-empty string\n    \n- Store the token in the active environment as `{{token}}` for use in subsequent requests\n    \n\n### Prerequisites\n\nEnsure the `{{baseUrl}}`, `{{username}}`, and `{{password}}` environment variables are set in the active environment before sending this request."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Negative Tests",
+          "item": [
+            {
+              "name": "Get Booking — Invalid ID",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Booking is not found\", function () {\r\n    pm.expect(pm.response.text().trim()).to.eql(\"Not Found\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/booking/999999999",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "booking",
+                    "999999999"
+                  ]
+                },
+                "description": "## Get Booking — Invalid ID\n\nAttempts to retrieve a booking using an invalid or non-existent booking ID to verify that the API correctly handles requests for resources that do not exist.\n\n### Endpoint\n\n`GET {{baseUrl}}/booking/999999999`\n\n### Authentication\n\nNot required.\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Accept` | `application/json` |\n\n## Expected Response\n\n**Status:** `404 Not Found`\n\nThe API should return:\n\n``` text\nNot Found\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 404** — Confirms the API correctly identifies that the requested booking does not exist.\n    \n2. **Booking is not found** — Confirms the response body contains `Not Found`.\n    \n\n## Usage Context\n\nThis is a negative test designed to validate API behavior when a client requests a booking using an invalid or non-existent ID.\n\nIt is independent of the main CRUD workflow and does not modify the runtime `{{bookingid}}` variable."
+              },
+              "response": []
+            },
+            {
+              "name": "Update Booking — Invalid Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {\r\n    pm.response.to.have.status(403);\r\n});\r\n\r\npm.test(\"Unauthorized request is rejected\", function () {\r\n    pm.expect(pm.response.text().trim()).to.eql(\"Forbidden\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "token=invalid_token_12345"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"firstname\": \"{{updateFirstname}}\",\r\n    \"lastname\": \"{{createLastname}}\",\r\n    \"totalprice\": 150,\r\n    \"depositpaid\": true,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"2026-10-01\",\r\n        \"checkout\": \"2026-10-05\"\r\n    },\r\n    \"additionalneeds\": \"Breakfast\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/booking/{{bookingid}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "booking",
+                    "{{bookingid}}"
+                  ]
+                },
+                "description": "## Update Booking — Invalid Token\n\nAttempts to update an existing booking using an invalid authentication token to verify that the API rejects unauthorized update requests.\n\n### Endpoint\n\n`PUT {{baseUrl}}/booking/{{bookingid}}`\n\n### Authentication\n\nRequired.\n\nThis negative test intentionally uses an invalid token instead of the valid `{{token}}` generated by the **Create Token** request.\n\n``` text\nCookie: token=invalid_token_12345\n\n ```\n\n## Request Body\n\nThe request contains a valid booking structure, but authentication is intentionally invalid.\n\n| Field | Type | Description |\n| --- | --- | --- |\n| `firstname` | string | Updated first name using `{{updateFirstname}}`. |\n| `lastname` | string | Guest last name using `{{createLastname}}`. |\n| `totalprice` | number | Updated booking price. |\n| `depositpaid` | boolean | Deposit status. |\n| `bookingdates` | object | Check-in and check-out dates. |\n| `additionalneeds` | string | Additional booking requirements. |\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Content-Type` | `application/json` |\n| `Accept` | `application/json` |\n| `Cookie` | `token=invalid_token_12345` |\n\n## Expected Response\n\n**Status:** `403 Forbidden`\n\nThe API should return:\n\n``` text\nForbidden\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 403** — Confirms the API rejects the unauthorized request.\n    \n2. **Unauthorized request is rejected** — Confirms the response body contains `Forbidden`.\n    \n\n## Usage Context\n\nThis is a negative authentication test.\n\nIt verifies that a valid booking cannot be modified when an invalid authentication token is supplied.\n\nThe test intentionally does not modify the valid `{{token}}` environment variable."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Booking — Invalid Data",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Booking is created despite invalid input\", function () {\r\n    pm.expect(jsonData).to.have.property(\"bookingid\");\r\n    pm.expect(jsonData.bookingid).to.be.a(\"number\");\r\n    pm.expect(jsonData.bookingid).to.be.above(0);\r\n});\r\n\r\npm.test(\"API returns booking details\", function () {\r\n    pm.expect(jsonData).to.have.property(\"booking\");\r\n});\r\n\r\npm.test(\"API preserves invalid firstname\", function () {\r\n    pm.expect(jsonData.booking.firstname).to.eql(\"\");\r\n});\r\n\r\npm.test(\"API preserves invalid lastname\", function () {\r\n    pm.expect(jsonData.booking.lastname).to.eql(\"\");\r\n});\r\n\r\npm.test(\"API accepts negative totalprice\", function () {\r\n    pm.expect(jsonData.booking.totalprice).to.eql(-100);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"firstname\": \"\",\r\n    \"lastname\": \"\",\r\n    \"totalprice\": -100,\r\n    \"depositpaid\": \"invalid\",\r\n    \"bookingdates\": {\r\n        \"checkin\": \"\",\r\n        \"checkout\": \"\"\r\n    },\r\n    \"additionalneeds\": \"\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/booking",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "booking"
+                  ]
+                },
+                "description": "## Create Booking — Invalid Data\n\nSends intentionally invalid booking data to evaluate how the Restful Booker API handles malformed or invalid input values.\n\n### Endpoint\n\n`POST {{baseUrl}}/booking`\n\n### Authentication\n\nNot required.\n\n## Request Body\n\nThe request intentionally contains invalid values:\n\n| Field | Invalid Value | Purpose |\n| --- | --- | --- |\n| `firstname` | Empty string | Tests empty first name handling. |\n| `lastname` | Empty string | Tests empty last name handling. |\n| `totalprice` | `-100` | Tests negative price handling. |\n| `depositpaid` | `\"invalid\"` | Tests an incorrect data type. |\n| `bookingdates.checkin` | Empty string | Tests invalid check-in date handling. |\n| `bookingdates.checkout` | Empty string | Tests invalid check-out date handling. |\n| `additionalneeds` | Empty string | Tests empty additional requirements. |\n\n## Expected Response\n\nThe Restful Booker demo API accepts this payload and returns:\n\n**Status:** `200 OK`\n\nThe response contains a generated `bookingid` and a `booking` object.\n\nThe observed behavior demonstrates that the API is permissive for these invalid input values rather than returning a `400 Bad Request`.\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 200** — Confirms the API accepts the submitted payload.\n    \n2. **Booking ID is generated** — Confirms the response contains a positive numeric `bookingid`.\n    \n3. **API returns booking details** — Confirms the response contains a `booking` object.\n    \n4. **Invalid firstname is preserved** — Confirms the returned `firstname` is an empty string.\n    \n5. **Invalid lastname is preserved** — Confirms the returned `lastname` is an empty string.\n    \n6. **Negative total price is accepted** — Confirms the returned `totalprice` is `-100`.\n    \n\n## Environment Variables\n\nThis request intentionally does **not** overwrite the main `{{bookingid}}` environment variable.\n\nThe booking created by this negative test is independent of the primary CRUD workflow.\n\n## Usage Context\n\nThis negative test evaluates the API's input-validation behavior rather than expecting a predefined HTTP error.\n\nIt documents the actual behavior observed from the Restful Booker demo API for malformed booking data."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Boundary Tests",
+          "item": [
+            {
+              "name": "Create Booking — Zero Price",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Booking ID is generated\", function () {\r\n    pm.expect(jsonData).to.have.property(\"bookingid\");\r\n    pm.expect(jsonData.bookingid).to.be.a(\"number\");\r\n    pm.expect(jsonData.bookingid).to.be.above(0);\r\n});\r\n\r\npm.test(\"Zero total price is accepted\", function () {\r\n    pm.expect(jsonData.booking.totalprice).to.eql(0);\r\n});\r\n\r\npm.test(\"Deposit paid is false\", function () {\r\n    pm.expect(jsonData.booking.depositpaid).to.eql(false);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"firstname\": \"{{createFirstname}}\",\r\n    \"lastname\": \"{{createLastname}}\",\r\n    \"totalprice\": 0,\r\n    \"depositpaid\": false,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"2026-10-01\",\r\n        \"checkout\": \"2026-10-05\"\r\n    },\r\n    \"additionalneeds\": \"Breakfast\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/booking",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "booking"
+                  ]
+                },
+                "description": "## Create Booking — Zero Price\n\nCreates a booking with a total price of `0` to verify how the Restful Booker API handles a zero-value booking price.\n\n### Endpoint\n\n`POST {{baseUrl}}/booking`\n\n### Authentication\n\nNot required.\n\n## Request Body\n\n| Field | Value | Description |\n| --- | --- | --- |\n| `firstname` | `{{createFirstname}}` | Guest's first name. |\n| `lastname` | `{{createLastname}}` | Guest's last name. |\n| `totalprice` | `0` | Boundary value used to test zero booking price. |\n| `depositpaid` | `false` | Indicates that no deposit has been paid. |\n| `bookingdates.checkin` | `2026-10-01` | Check-in date. |\n| `bookingdates.checkout` | `2026-10-05` | Check-out date. |\n| `additionalneeds` | `Breakfast` | Additional requirement. |\n\n## Expected Response\n\n**Status:** `200 OK`\n\nThe API should return a generated `bookingid` and booking details containing:\n\n``` json\n{\n  \"totalprice\": 0,\n  \"depositpaid\": false\n}\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 200** — Confirms the API accepts the booking.\n    \n2. **Booking ID is generated** — Confirms a positive numeric `bookingid` is returned.\n    \n3. **Zero total price is accepted** — Confirms `totalprice` is `0`.\n    \n4. **Deposit paid is false** — Confirms `depositpaid` is `false`.\n    \n\n## Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `createFirstname` | Input | Guest first name. |\n| `createLastname` | Input | Guest last name. |\n\nThe generated booking ID is intentionally not stored in the primary `{{bookingid}}` variable.\n\n## Usage Context\n\nThis boundary test verifies that a booking with a zero total price can be created successfully.\n\nIt is independent of the main CRUD workflow and does not replace the primary runtime `{{bookingid}}`."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Booking — Same Day Dates",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Booking ID is generated\", function () {\r\n    pm.expect(jsonData).to.have.property(\"bookingid\");\r\n    pm.expect(jsonData.bookingid).to.be.a(\"number\");\r\n    pm.expect(jsonData.bookingid).to.be.above(0);\r\n});\r\n\r\npm.test(\"Same-day check-in and check-out are accepted\", function () {\r\n    pm.expect(jsonData.booking.bookingdates.checkin).to.eql(\"2026-10-10\");\r\n    pm.expect(jsonData.booking.bookingdates.checkout).to.eql(\"2026-10-10\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"firstname\": \"{{createFirstname}}\",\r\n    \"lastname\": \"{{createLastname}}\",\r\n    \"totalprice\": 100,\r\n    \"depositpaid\": false,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"2026-10-10\",\r\n        \"checkout\": \"2026-10-10\"\r\n    },\r\n    \"additionalneeds\": \"Breakfast\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/booking?Content-Type=application/json&Accept=application/json",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "booking"
+                  ],
+                  "query": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "Accept",
+                      "value": "application/json"
+                    }
+                  ]
+                },
+                "description": "## Create Booking — Same Day Dates\n\nCreates a booking where the check-in and check-out dates are the same to verify how the Restful Booker API handles a same-day booking period.\n\n### Endpoint\n\n`POST {{baseUrl}}/booking`\n\n### Authentication\n\nNot required.\n\n## Request Body\n\n| Field | Value | Description |\n| --- | --- | --- |\n| `firstname` | `{{createFirstname}}` | Guest's first name. |\n| `lastname` | `{{createLastname}}` | Guest's last name. |\n| `totalprice` | `100` | Booking price. |\n| `depositpaid` | `false` | Indicates that no deposit has been paid. |\n| `bookingdates.checkin` | `2026-10-10` | Check-in date. |\n| `bookingdates.checkout` | `2026-10-10` | Same date as check-in; boundary condition. |\n| `additionalneeds` | `Breakfast` | Additional requirement. |\n\n## Expected Response\n\n**Status:** `200 OK`\n\nThe API accepts the same-day booking and returns a generated `bookingid` with booking details.\n\nThe returned booking dates should contain:\n\n``` json\n{\n  \"checkin\": \"2026-10-10\",\n  \"checkout\": \"2026-10-10\"\n}\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 200** — Confirms the API accepts the request.\n    \n2. **Booking ID is generated** — Confirms a positive numeric `bookingid` is returned.\n    \n3. **Same-day dates are accepted** — Confirms check-in and check-out are both `2026-10-10`.\n    \n\n## Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `createFirstname` | Input | Guest first name. |\n| `createLastname` | Input | Guest last name. |\n\nThe generated booking ID is intentionally not stored in the primary `{{bookingid}}` variable.\n\n## Usage Context\n\nThis boundary test verifies that the API accepts a booking where check-in and check-out occur on the same date.\n\nIt is independent of the main CRUD workflow and does not replace the primary runtime `{{bookingid}}`."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Get All Booking IDs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is an array\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData).to.be.an('array');\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking"
+              ]
+            },
+            "description": "## Get All Booking IDs\n\nRetrieves the list of all booking IDs currently available in the Restful Booker API.\n\n### Endpoint\n\n`GET {{baseUrl}}/booking`\n\n### Authentication\n\nNot required.\n\n### Request Headers\n\n| Header | Value | Purpose |\n| --- | --- | --- |\n| `Accept` | `application/json` | Requests a JSON response. |\n\n## Expected Response\n\n**Status:** `200 OK`\n\nThe API returns an array containing booking ID objects.\n\nExample response:\n\n``` json\n[\n  {\n    \"bookingid\": 1\n  },\n  {\n    \"bookingid\": 2\n  }\n]\n\n ```\n\n## Test Validations\n\nThe automated tests should validate:\n\n1. **Status code is 200** — Confirms the endpoint responds successfully.\n    \n2. **Response is an array** — Confirms the API returns a collection of booking records.\n    \n3. **Booking IDs are present** — Confirms returned records contain the `bookingid` property.\n    \n4. **Booking IDs are numeric** — Confirms each booking ID is returned as a number.\n    \n\n## Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n\nThis request does not modify the runtime `{{bookingid}}` variable.\n\n## Usage Context\n\nThis request provides independent endpoint-level validation of the booking listing API.\n\nIt is separate from the main CRUD workflow because it retrieves all available booking IDs rather than operating on the dynamically created booking represented by `{{bookingid}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Response contains booking ID\", function () {\r\n    pm.expect(jsonData).to.have.property(\"bookingid\");\r\n});\r\n\r\npm.test(\"Booking ID is a valid number\", function () {\r\n    pm.expect(jsonData.bookingid).to.be.a(\"number\");\r\n    pm.expect(jsonData.bookingid).to.be.above(0);\r\n});\r\n\r\npm.test(\"Response contains booking details\", function () {\r\n    pm.expect(jsonData).to.have.property(\"booking\");\r\n});\r\n\r\npm.test(\"Booking contains required fields\", function () {\r\n    pm.expect(jsonData.booking).to.have.property(\"firstname\");\r\n    pm.expect(jsonData.booking).to.have.property(\"lastname\");\r\n    pm.expect(jsonData.booking).to.have.property(\"totalprice\");\r\n    pm.expect(jsonData.booking).to.have.property(\"depositpaid\");\r\n    pm.expect(jsonData.booking).to.have.property(\"bookingdates\");\r\n});\r\n\r\npm.test(\"Firstname matches payload\", function () {\r\n    pm.expect(jsonData.booking.firstname).to.eql(\r\n    pm.environment.get(\"createFirstname\")\r\n)\r\n});\r\n\r\npm.test(\"Booking dates are present\", function () {\r\n    pm.expect(jsonData.booking.bookingdates).to.have.property(\"checkin\");\r\n    pm.expect(jsonData.booking.bookingdates).to.have.property(\"checkout\");\r\n});\r\n\r\npm.environment.set(\"bookingid\", jsonData.bookingid);\r\n\r\npm.test(\"Booking ID is stored in environment\", function () {\r\n    pm.expect(Number(pm.environment.get(\"bookingid\"))).to.eql(\r\n        jsonData.bookingid\r\n    );\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"firstname\": \"{{createFirstname}}\",\r\n    \"lastname\": \"{{createLastname}}\",\r\n    \"totalprice\": 1500,\r\n    \"depositpaid\": true,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"2026-01-01\",\r\n        \"checkout\": \"2026-01-05\"\r\n    },\r\n    \"additionalneeds\": \"Breakfast\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking"
+              ]
+            },
+            "description": "## Create Booking\n\nCreates a new booking in the Restful Booker system and returns the generated booking ID along with the complete booking details.\n\n### Endpoint\n\n`POST {{baseUrl}}/booking`\n\n### Authentication\n\nNot required.\n\n## Request Body\n\n| Field                   | Type          | Required | Description                                                |\n| ----------------------- | ------------- | -------- | ---------------------------------------------------------- |\n| `firstname`             | string        | Yes      | Guest's first name. Uses `{{createFirstname}}`.            |\n| `lastname`              | string        | Yes      | Guest's last name. Uses `{{createLastname}}`.              |\n| `totalprice`            | number        | Yes      | Total price for the booking.                               |\n| `depositpaid`           | boolean       | Yes      | Whether a deposit has been paid.                           |\n| `bookingdates.checkin`  | string (date) | Yes      | Check-in date in `YYYY-MM-DD` format.                      |\n| `bookingdates.checkout` | string (date) | Yes      | Check-out date in `YYYY-MM-DD` format.                     |\n| `additionalneeds`       | string        | No       | Additional requirements for the stay, such as `Breakfast`. |\n\n## Response\n\nA successful response returns HTTP `200 OK` with the generated booking ID and booking details.\n\n```json\n{\n  \"bookingid\": 12345,\n  \"booking\": {\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"totalprice\": 1500,\n    \"depositpaid\": true,\n    \"bookingdates\": {\n      \"checkin\": \"2026-01-01\",\n      \"checkout\": \"2026-01-05\"\n    },\n    \"additionalneeds\": \"Breakfast\"\n  }\n}\n```\n\n| Field       | Type   | Description                                      |\n| ----------- | ------ | ------------------------------------------------ |\n| `bookingid` | number | Unique identifier for the newly created booking. |\n| `booking`   | object | Complete booking object returned by the server.  |\n\n## Environment Variables\n\n| Variable          | Direction | Description                                                                 |\n| ----------------- | --------- | --------------------------------------------------------------------------- |\n| `baseUrl`         | Input     | Base URL of the Restful Booker API.                                         |\n| `createFirstname` | Input     | Guest first name used in the request body.                                  |\n| `createLastname`  | Input     | Guest last name used in the request body.                                   |\n| `bookingid`       | Output    | Dynamically populated with the returned booking ID for downstream requests. |\n\n## Post-Response Behaviour\n\nThe test script automatically:\n\n* Validates the HTTP status code is `200`\n* Confirms the response contains a `bookingid`\n* Validates that `bookingid` is a positive number\n* Confirms the response contains a `booking` object\n* Validates the required booking fields\n* Verifies that `firstname` matches `{{createFirstname}}`\n* Verifies that `bookingdates` contains both `checkin` and `checkout`\n* Stores the generated booking ID in `{{bookingid}}`\n\n## Role in CRUD Flow\n\nThe generated `{{bookingid}}` is used by subsequent requests to:\n\n* Retrieve the newly created booking\n* Update the booking\n* Verify the update\n* Delete the booking\n* Verify that the booking has been deleted"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking — Verify Creation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Response contains booking details\", function () {\r\n    pm.expect(jsonData).to.have.property(\"firstname\");\r\n    pm.expect(jsonData).to.have.property(\"lastname\");\r\n    pm.expect(jsonData).to.have.property(\"totalprice\");\r\n    pm.expect(jsonData).to.have.property(\"depositpaid\");\r\n    pm.expect(jsonData).to.have.property(\"bookingdates\");\r\n});\r\n\r\npm.test(\"Booking dates contain check-in and check-out\", function () {\r\n    pm.expect(jsonData.bookingdates).to.have.property(\"checkin\");\r\n    pm.expect(jsonData.bookingdates).to.have.property(\"checkout\");\r\n});\r\n\r\npm.test(\"Firstname matches created booking\", function () {\r\n    pm.expect(jsonData.firstname).to.eql(\r\n    pm.environment.get(\"createFirstname\"))\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingid}}"
+              ]
+            },
+            "description": "## Get Booking — Verify Creation\n\nRetrieves the details of a specific booking using its dynamically generated booking ID to verify that the booking was successfully created and persisted.\n\n### Endpoint\n\n`GET {{baseUrl}}/booking/{{bookingid}}`\n\n### Authentication\n\nNot required.\n\n## Path / Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `bookingid` | Input | Booking ID dynamically populated by the Create Booking request. |\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Accept` | `application/json` |\n\n## Expected Response\n\n**Status:** `200 OK`\n\nThe response contains the complete booking details.\n\n``` json\n{\n  \"firstname\": \"string\",\n  \"lastname\": \"string\",\n  \"totalprice\": 0,\n  \"depositpaid\": true,\n  \"bookingdates\": {\n    \"checkin\": \"YYYY-MM-DD\",\n    \"checkout\": \"YYYY-MM-DD\"\n  },\n  \"additionalneeds\": \"string\"\n}\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 200** — Confirms the booking was successfully retrieved.\n    \n2. **Response contains booking details** — Verifies the presence of `firstname`, `lastname`, `totalprice`, `depositpaid`, and `bookingdates`.\n    \n3. **Booking dates contain check-in and check-out** — Confirms both date properties are present.\n    \n4. **Firstname matches created booking** — Verifies that the returned `firstname` matches `{{createFirstname}}`.\n    \n\n## Usage Context\n\nThis request is executed after **Create Booking** in the CRUD workflow.\n\nIt uses the dynamically generated `{{bookingid}}` to verify that the newly created booking exists and that the expected booking data has been persisted correctly.\n\n### CRUD Flow Position\n\n`Create Booking → Get Booking — Verify Creation`\n\n---"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Response contains updated booking details\", function () {\r\n    pm.expect(jsonData).to.have.property(\"firstname\");\r\n    pm.expect(jsonData).to.have.property(\"lastname\");\r\n    pm.expect(jsonData).to.have.property(\"totalprice\");\r\n    pm.expect(jsonData).to.have.property(\"depositpaid\");\r\n    pm.expect(jsonData).to.have.property(\"bookingdates\");\r\n});\r\n\r\npm.test(\"Firstname is updated to Avishka\", function () {\r\n    pm.expect(jsonData.firstname).to.eql(\r\n    pm.environment.get(\"updateFirstname\"))\r\n});\r\n\r\npm.test(\"Booking dates contain check-in and check-out\", function () {\r\n    pm.expect(jsonData.bookingdates).to.have.property(\"checkin\");\r\n    pm.expect(jsonData.bookingdates).to.have.property(\"checkout\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"firstname\": \"{{updateFirstname}}\",\r\n    \"lastname\": \"Chowdhury\",\r\n    \"totalprice\": 1600,\r\n    \"depositpaid\": true,\r\n    \"bookingdates\": {\r\n        \"checkin\": \"2026-02-01\",\r\n        \"checkout\": \"2026-02-10\"\r\n    },\r\n    \"additionalneeds\": \"Lunch\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingid}}"
+              ]
+            },
+            "description": "## Update Booking\n\nUpdates an existing booking using the dynamically generated booking ID and verifies that the updated booking details are returned successfully.\n\n### Endpoint\n\n`PUT {{baseUrl}}/booking/{{bookingid}}`\n\n### Authentication\n\nRequired.\n\nThe request uses the authentication token generated by the **Create Token** request.\n\n``` text\nCookie: token={{token}}\n\n ```\n\nThe `{{token}}` environment variable is populated dynamically after successful authentication.\n\n## Request Body\n\n| Field | Type | Required | Description |\n| --- | --- | --- | --- |\n| `firstname` | string | Yes | Updated guest first name. Uses `{{updateFirstname}}`. |\n| `lastname` | string | Yes | Guest last name. Uses `{{createLastname}}`. |\n| `totalprice` | number | Yes | Updated total booking price. |\n| `depositpaid` | boolean | Yes | Updated deposit status. |\n| `bookingdates.checkin` | string (date) | Yes | Updated check-in date in `YYYY-MM-DD` format. |\n| `bookingdates.checkout` | string (date) | Yes | Updated check-out date in `YYYY-MM-DD` format. |\n| `additionalneeds` | string | No | Additional requirements for the stay. |\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Content-Type` | `application/json` |\n| `Accept` | `application/json` |\n| `Cookie` | `token={{token}}` |\n\n## Expected Response\n\n**Status:** `200 OK`\n\nThe API returns the updated booking details.\n\n``` json\n{\n  \"firstname\": \"Avishka\",\n  \"lastname\": \"Chowdhury\",\n  \"totalprice\": 150,\n  \"depositpaid\": true,\n  \"bookingdates\": {\n    \"checkin\": \"2026-10-01\",\n    \"checkout\": \"2026-10-05\"\n  },\n  \"additionalneeds\": \"Breakfast\"\n}\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 200** — Confirms the update request was successful.\n    \n2. **Response contains updated booking details** — Verifies the response contains `firstname`, `lastname`, `totalprice`, `depositpaid`, and `bookingdates`.\n    \n3. **Firstname is updated correctly** — Verifies that the returned `firstname` matches `{{updateFirstname}}`.\n    \n4. **Booking dates contain check-in and check-out** — Confirms both date properties are present.\n    \n\n## Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `bookingid` | Input | Dynamically generated booking ID from Create Booking. |\n| `token` | Input | Authentication token generated by Create Token. |\n| `updateFirstname` | Input | First name used for the update operation. |\n| `createLastname` | Input | Last name used in the update request. |\n\n## Usage Context\n\nThis request is executed after **Get Booking — Verify Creation**.\n\nIt uses the dynamically generated `{{bookingid}}` and authentication token to update the existing booking.\n\n### CRUD Flow Position\n\n`Create Booking → Verify Creation → Update Booking → Verify Update`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking — Verify Update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nvar jsonData = pm.response.json();\r\n\r\npm.test(\"Response contains booking details\", function () {\r\n    pm.expect(jsonData).to.have.property(\"firstname\");\r\n    pm.expect(jsonData).to.have.property(\"lastname\");\r\n    pm.expect(jsonData).to.have.property(\"totalprice\");\r\n    pm.expect(jsonData).to.have.property(\"depositpaid\");\r\n    pm.expect(jsonData).to.have.property(\"bookingdates\");\r\n});\r\n\r\npm.test(\"Updated firstname is persisted\", function () {\r\n   pm.expect(jsonData.firstname).to.eql(\r\n    pm.environment.get(\"updateFirstname\"))\r\n});\r\n\r\npm.test(\"Booking dates contain check-in and check-out\", function () {\r\n    pm.expect(jsonData.bookingdates).to.have.property(\"checkin\");\r\n    pm.expect(jsonData.bookingdates).to.have.property(\"checkout\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingid}}"
+              ]
+            },
+            "description": "## Get Booking — Verify Update\n\nRetrieves the updated booking using its booking ID to verify that the changes made by the **Update Booking** request have been successfully persisted.\n\n### Endpoint\n\n`GET {{baseUrl}}/booking/{{bookingid}}`\n\n### Authentication\n\nNot required.\n\n## Path / Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `bookingid` | Input | Booking ID dynamically populated by the Create Booking request. |\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Accept` | `application/json` |\n\n## Expected Response\n\n**Status:** `200 OK`\n\nThe response should contain the updated booking details.\n\n``` json\n{\n  \"firstname\": \"Avishka\",\n  \"lastname\": \"Chowdhury\",\n  \"totalprice\": 150,\n  \"depositpaid\": true,\n  \"bookingdates\": {\n    \"checkin\": \"2026-10-01\",\n    \"checkout\": \"2026-10-05\"\n  },\n  \"additionalneeds\": \"Breakfast\"\n}\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 200** — Confirms the updated booking can be retrieved.\n    \n2. **Response contains booking details** — Verifies the required booking fields are present.\n    \n3. **Updated firstname is persisted** — Confirms the returned `firstname` matches `{{updateFirstname}}`.\n    \n4. **Booking dates contain check-in and check-out** — Confirms both date properties are present.\n    \n\n## Usage Context\n\nThis request is executed after **Update Booking**.\n\nIt verifies persistence by retrieving the booking again instead of relying only on the response returned by the update operation.\n\n### CRUD Flow Position\n\n`Update Booking → Get Booking — Verify Update`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Booking deletion is successful\", function () {\r\n    pm.expect(pm.response.text().trim()).to.eql(\"Created\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingid}}"
+              ]
+            },
+            "description": "## Delete Booking\n\nDeletes an existing booking using its dynamically generated booking ID and verifies that the deletion request is successfully processed by the Restful Booker API.\n\n### Endpoint\n\n`DELETE {{baseUrl}}/booking/{{bookingid}}`\n\n### Authentication\n\nRequired.\n\nThe request uses the authentication token generated by the **Create Token** request.\n\n``` text\nCookie: token={{token}}\n\n ```\n\nThe `{{token}}` environment variable is populated dynamically after successful authentication.\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Accept` | `application/json` |\n| `Cookie` | `token={{token}}` |\n\n## Expected Response\n\n**Status:** `201 Created`\n\nThe Restful Booker API returns the following response text when the deletion is successful:\n\n``` text\nCreated\n\n ```\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 201** — Confirms the delete operation was successfully processed.\n    \n2. **Booking deletion is successful** — Confirms the response body contains `Created`.\n    \n\n## Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `bookingid` | Input | Booking ID of the booking to be deleted. |\n| `token` | Input | Authentication token generated by Create Token. |\n\n## Usage Context\n\nThis request is executed after **Get Booking — Verify Update**.\n\nIt deletes the same booking identified by `{{bookingid}}`.\n\nThe subsequent **Verify Booking Deleted** request confirms that the booking can no longer be retrieved.\n\n### CRUD Flow Position\n\n`Update Booking → Verify Update → Delete Booking → Verify Deletion`"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Booking Deleted",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Deleted booking cannot be retrieved\", function () {\r\n    pm.expect(pm.response.text()).to.eql(\"Not Found\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingid}}"
+              ]
+            },
+            "description": "## Verify Booking Deleted\n\nAttempts to retrieve the previously deleted booking to verify that the booking has been successfully removed from the Restful Booker system.\n\n### Endpoint\n\n`GET {{baseUrl}}/booking/{{bookingid}}`\n\n### Authentication\n\nNot required.\n\n## Path / Environment Variables\n\n| Variable | Direction | Description |\n| --- | --- | --- |\n| `baseUrl` | Input | Base URL of the Restful Booker API. |\n| `bookingid` | Input | Booking ID that was deleted by the previous Delete Booking request. |\n\n## Headers\n\n| Key | Value |\n| --- | --- |\n| `Accept` | `application/json` |\n\n## Expected Response\n\n**Status:** `404 Not Found`\n\nThe API should return:\n\n``` text\nNot Found\n\n ```\n\nThis confirms that the previously deleted booking can no longer be retrieved.\n\n## Test Validations\n\nThe automated tests validate:\n\n1. **Status code is 404** — Confirms the deleted booking no longer exists.\n    \n2. **Booking is not found** — Confirms the response body contains `Not Found`.\n    \n\n## Usage Context\n\nThis request is executed after **Delete Booking**.\n\nIt provides the final verification point in the CRUD lifecycle by confirming that the booking created at the beginning of the workflow has been successfully removed.\n\n### CRUD Flow Position\n\n`Create → Verify Creation → Update → Verify Update → Delete → Verify Deletion`"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "if (!pm.request.headers.has(\"Accept\")) {\r",
+          "    pm.request.headers.add({\r",
+          "        key: \"Accept\",\r",
+          "        value: \"application/json\"\r",
+          "    });\r",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ]
+}
